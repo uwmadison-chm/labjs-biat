@@ -16,8 +16,6 @@ data <- read_csv(input) %>%
   select(-starts_with('stimuli')) %>%
   select(-starts_with('url'))
 
-tasks_obs <- data %>% group_by(ppt, session)
-
 tasks <- data %>% group_by(observation)
 
 # Cleanup time, from Table 8 in Nosek, et. al 2014:
@@ -44,10 +42,7 @@ tasks = tasks %>%
 blocks = tasks %>%
   group_by(block_number, .add = TRUE)
 
-# TODO: count trials in each block, check some that are not 20 trials
-counts = blocks %>% summarize(n())
-
-# Remove first four trials in each block, which are the 'warmup'
+# Remove first four trials in each block, which are the 'warmup' word-only trials
 blocks <- blocks %>%
   slice(5:n())
 
@@ -61,7 +56,7 @@ blocks <- blocks %>%
   mutate(duration = ifelse(duration < 400, 400, duration))
 
 
-# OK, assuming we have the right data ready finally, for each ppt session we compute D twice.
+# OK, assuming we have the right data ready now, for each ppt session we compute D twice.
 # 
 # We do this for blocks 2+3, and then blocks 4+5, and then average
 # 
@@ -72,32 +67,34 @@ blocks <- blocks %>%
 
 d_blocks <- blocks %>%
   # Figure out which condition we're in
+  # It sure would have been smart for me to make the labjs task store this in a separate field but oh well!
   mutate(condition = ifelse( (left1 == 'Democrat' & left2 == 'Good') | (right1 == 'Democrat' & right2 == 'Good'), 1, 2)) %>%
 
   # Add a mean duration per block, but we want it to be negative where condition = 1
-  # (this is how we're doing M2 - M1)
+  # (this is the ugly way I am doing M2 - M1)
   mutate(m = mean(duration) * ifelse(condition == 1, -1, 1)) %>%
   
   # We want to calculate D for blocks 2+3 and blocks 4+5 (1 was practice, dropped)
+  # So d_block is either 1 or 2
   mutate(d_block = ifelse(block_number == 2 | block_number == 3, 1, 2)) %>%
 
-  # Regroup based on d block
+  # Regroup based on d_block
   group_by(observation, d_block) %>%
 
   # Add a standard deviation across each entire d_block 
   mutate(sd = sd(duration)) %>%
 
-  # Now we can finally calculate D by adding the means of the durations from each condition
+  # Now we can finally calculate D by adding the means of the durations from each condition.
   # We don't want to sum ALL m, we want to pick ONE from each condition... so we use min and max
-  # because one is positive and one is negative.
+  # because one is positive and one is negative. This trickery essentially gets us M2 - M1.
   summarize(ppt = first(ppt), session = first(session),
             partial_d = (min(m) + max(m)) / sd) %>%
 
-  # Now we group ONLY by observation and get the mean of d from that partial_d above
-  # Keeping ppt and session just for convenience
+  # Now we group ONLY by observation and get the mean of d from that partial_d above.
+  # Keeping ppt and session for final output
   group_by(observation, ppt, session) %>%
 
-  # Yay?
+  # Yay? D is the mean of the two partial calculations
   summarize(d = mean(partial_d))
 
 
