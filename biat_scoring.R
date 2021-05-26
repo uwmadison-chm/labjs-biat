@@ -20,18 +20,16 @@ tasks_obs <- data %>% group_by(ppt, session)
 
 tasks <- data %>% group_by(observation)
 
-"
-Cleanup time, from Table 8 in Nosek, et. al 2014:
-
-    Remove trials > 10000ms.
-    Remove first four trials in each block.
-    Retain error trials.
-    Recode <400ms to 400ms and >2000ms to 2000ms.
-    Remove tasks with >10% fast responses.
-    Compute D separately for each pair of two consecutive blocks separately, then average those
-
-Sounds easy enough...
-"
+# Cleanup time, from Table 8 in Nosek, et. al 2014:
+# 
+#     Remove trials > 10000ms.
+#     Remove first four trials in each block.
+#     Retain error trials.
+#     Recode <400ms to 400ms and >2000ms to 2000ms.
+#     Remove tasks with >10% fast responses.
+#     Compute D separately for each pair of two consecutive blocks separately, then average those
+# 
+# Sounds easy enough...
 
 # Removing entire tasks with >10% responses <300ms
 button_mashers = tasks %>%
@@ -63,16 +61,14 @@ blocks <- blocks %>%
   mutate(duration = ifelse(duration < 400, 400, duration))
 
 
-"""
-OK, assuming we have the right data ready finally, for each ppt session we compute D twice.
-
-We do this for blocks 2+3, and then blocks 4+5, and then average
-
-- compute SD, the standard deviation of ALL latencies
-- find M1, the mean of the latencies in condition 1.
-- find M2, the mean of the latencies in condition 2.
-- D = (M2 - M1)/SD
-"""
+# OK, assuming we have the right data ready finally, for each ppt session we compute D twice.
+# 
+# We do this for blocks 2+3, and then blocks 4+5, and then average
+# 
+# - compute SD, the standard deviation of ALL latencies
+# - find M1, the mean of the latencies in condition 1.
+# - find M2, the mean of the latencies in condition 2.
+# - D = (M2 - M1)/SD
 
 d_blocks <- blocks %>%
   # Figure out which condition we're in
