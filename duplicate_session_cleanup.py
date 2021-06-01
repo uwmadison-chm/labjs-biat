@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import logging
 import numpy as np
 import pandas as pd
 import sys
@@ -72,6 +73,14 @@ for ppt, session in dupes:
                 df = drop_observation(df, obs)
                 tasks = drop_observation(tasks, obs)
 
-# TODO: Some durations are NA, figure out why here maybe?
+
+na_durations = df['duration'].isnull().sum()
+
+if na_durations > 0:
+    # Some durations are NA, warn and force them to 0, likely button mashing?
+    # na_durations.time_show is NA
+    logging.warning(f"Got {na_durations} NaN durations, setting to zero")
+
+    df['duration'] = df['duration'].fillna(0)
 
 df.to_csv(sys.argv[2])
