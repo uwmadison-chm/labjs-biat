@@ -57,6 +57,7 @@ blocks <- blocks %>%
 
 
 # OK, assuming we have the right data ready now, for each ppt session we compute D twice.
+# Each row here is now one IAT trial
 # 
 # We do this for blocks 2+3, and then blocks 4+5, and then average
 # 
@@ -72,6 +73,7 @@ d_blocks <- blocks %>%
 
   # Add a mean duration per block, but we want it to be negative where condition = 1
   # (this is the ugly way I am doing M2 - M1)
+  # TODO: maybe consider grouping on block and condition?
   mutate(m = mean(duration) * ifelse(condition == 1, -1, 1)) %>%
   
   # We want to calculate D for blocks 2+3 and blocks 4+5 (1 was practice, dropped)
@@ -95,14 +97,14 @@ d_blocks <- blocks %>%
   group_by(observation, ppt, session) %>%
 
   # Yay? D is the mean of the two partial calculations
-  summarize(d = mean(partial_d))
+  summarize(d = mean(partial_d), trials = n())
 
 
 # Final massaging, drop observation and pivot by session
 output_table <- d_blocks %>%
   ungroup() %>%
   select(-observation) %>% 
-  pivot_wider(names_from = session, values_from = d) %>%
+  pivot_wider(names_from = session, values_from = c(d, trials)) %>%
   arrange(ppt)
 
 write_csv(output_table, output)
